@@ -1,0 +1,96 @@
+import re
+from os.path import join, isfile
+from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+HTTP = HTTPRemoteProvider()
+
+data_dir = config['data_dir']
+readfilt = config['read_filtering']
+
+
+# !!!!!!!!!!!!!!!!!!!!!
+
+def get_osf_url(wildcards):
+    """
+    This doesn't work, because who knows.
+    Snakemake error message:
+
+            InputFunctionException in line 18 of /home/ubuntu/dahak-taco/rules/read_filtering/fetch_reads.rule:
+            KeyError: 'data/SRR606249_2.fq.gz'
+            Wildcards:
+            sample=SRR606249
+            direction=2
+
+    This is not helpful because it points to the rule: line.
+    Maybe mixing wildcards, functions, and HTTP is bad?
+    Just drop the input: directive.
+    """
+    read_data_file = pre_trimming_pattern.format(**wildcards)
+    read_data_url = readfilt['read_files'][read_data_file]
+    return HTTP.remote(read_data_url, keep_local=True)
+
+# !!!!!!!!!!!!!!!!!!!!!
+
+
+
+pre_trimming_pattern = join(data_dir, readfilt['read_patterns']['pre_trimming_pattern'])
+
+rule download_reads:
+    """
+    Fetch user-requested files from OSF 
+    containing reads that will be used 
+    in the read filtering process.
+
+    Note that this should define wildcard-based
+    rules, rather than downloading all files 
+    at once, to keep things flexible and fast.
+
+    See fetch_reads.md
+
+    """
+    output:
+        pre_trimming_pattern
+    run:
+        # output should be one item, since one rule at a time
+
+        # strip data dir from output file name
+        stripped_output = re.sub(data_dir,'',output[0])
+
+        # get the corresponding url
+        read_data_url = readfilt['read_files'][stripped_output]
+
+        # include the data dir in the final output file name
+        read_data_file = output
+
+        shell('''
+            wget -O {read_data_file} {read_data_url}
+        ''')
+
+
+adapter_pattern = join(data_dir, readfilt['read_patterns']['adapter_pattern'])
+
+rule download_read_adapter:
+    """
+    Download FASTA read adapaters.
+    This downloads adpaters for 
+    the TruSeq2-PE sequencer by default.
+
+    See fetch_reads.md
+    """
+    output:
+        adapter_pattern
+    message: '''--- Downloading adapter.'''
+    run:
+        # strip data dir from adapter file name
+        stripped_output = re.sub(data_dir,'',output[0])
+
+        # get corresponding url
+        adapter_url = readfilt['adapter_files'][stripped_output]
+
+        # include the data dir in the final output name
+        adapter_file = adapter_pattern.format(**wildcards)
+
+        shell('''
+            wget -O {adapter_file} {adapter_url}
+        ''')
+
+

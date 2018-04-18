@@ -1,0 +1,76 @@
+from os.path import join
+
+data_dir = config['data_dir']
+biocontainers = config['biocontainers']
+readfilt = config['read_filtering']
+
+fq_fwd = join(data_dir, readfilt['read_patterns']['pre_trimming_pattern'].format(direction=1,sample='{sample}'))
+fq_rev = join(data_dir, readfilt['read_patterns']['pre_trimming_pattern'].format(direction=2,sample='{sample}'))
+
+quality_input = [fq_fwd, fq_rev]
+
+fq_fwd_trimmed = join(data_dir, readfilt['read_patterns']['post_trimming_pattern'].format(direction=1,sample='{sample}',qual='{qual}'))
+fq_rev_trimmed = join(data_dir, readfilt['read_patterns']['post_trimming_pattern'].format(direction=2,sample='{sample}',qual='{qual}'))
+
+trim_target_ext = readfilt['quality_trimming']['trim_suffix']
+
+fq_fwd_se = re.sub('\.fq\.gz',trim_target_ext,fq_fwd_trimmed)
+fq_rev_se = re.sub('\.fq\.gz',trim_target_ext,fq_rev_trimmed)
+
+quality_output = [fq_fwd_trimmed, fq_fwd_se,
+                  fq_rev_trimmed, fq_rev_se]
+
+adapter_file = join(data_dir,readfilt['quality_trimming']['adapter_file'])
+
+quality_log = join(data_dir,'trimmomatic_pe_{sample}.log')
+
+pulled_containers_touchfile = join(data_dir,'.pulled_containers')
+
+trimmo_quayurl = biocontainers['trimmomatic']['quayurl'] + ":" + biocontainers['trimmomatic']['version']
+
+rule quality_trimming:
+    """
+    Trim reads from the sequencer by dropping low-quality reads.
+
+    See quality_trimming.md
+    """
+    input:
+        quality_input, adapter_file, pulled_containers_touchfile
+    output:
+        quality_output
+    message: 
+        '''--- Quality trimming data at q 2 and 30.'''
+    #singularity: 
+    #    {trimmo_quayurl}
+    log: 
+        quality_log
+    run:
+        qual_wc = "{qual}".format(**wildcards)
+
+        quality_input_wc = [x.format(**wildcards) for x in quality_input]
+        quality_input_wc = ["/%s"%(x) for x in quality_input_wc]
+        quality_input_wcs = " ".join(quality_input_wc)
+
+        quality_output_wc = [x.format(**wildcards) for x in quality_output]
+        quality_output_wc = ["/%s"%(x) for x in quality_output_wc]
+        quality_output_wcs = " ".join(quality_output_wc)
+
+        log_wc = quality_log.format(**wildcards)
+
+        shell('''
+            docker run \
+                -u $(id -u):$(id -g) \
+                -v {PWD}/{data_dir}:/{data_dir} \
+                -it \
+                {trimmo_quayurl} \
+                trimmomatic PE \
+                {quality_input_wcs}                 \
+                {quality_output_wcs}                \
+                ILLUMINACLIP:/{adapter_file}:2:40:15   \
+                LEADING:{qual_wc}                   \
+                TRAILING:{qual_wc}                  \
+                SLIDINGWINDOW:4:{qual_wc}           \
+                MINLEN:25                           \
+                2> {log_wc}
+        ''')
+
