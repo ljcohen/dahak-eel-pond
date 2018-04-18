@@ -1,4 +1,4 @@
-# eel-pond-dahak
+# dahak-eel-pond
 working dir for project to turn eel pond protocols (nonmodel RNAseq differential expression analysis) into a dahak-style containerized workflow
 
 [eel-pond protocols](http://eel-pond.readthedocs.io/en/latest/)
