@@ -9,4 +9,5 @@ working dir for project to turn eel pond protocols into a dahak-style containeri
   - Assembly
   - Quality Assessment
   - Annotation
-  - Transcript Quantification and Differential Expression
+  - Transcript Quantification 
+  - Differential Expression
