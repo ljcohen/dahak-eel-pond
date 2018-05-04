@@ -15,10 +15,17 @@ working dir for project to turn eel pond protocols (nonmodel RNAseq differential
   - Differential Expression
 
 
+Instructions:
+
+Create conda env
+
+`pip install dahak-taco`
+
 
 Current Status: 
 
-Imported workflow style and scripts from dahak-taco (4-18-18). These are still under development for dahak & subject to change.
+Imported workflow style and scripts for read filtering from dahak (4-18-18). These are still under development for dahak & subject to change.
+
 
 **To Do:**
 
