@@ -1,0 +1,3 @@
+Trinity --left left.fq \
+  --right right.fq --seqType fq --max_memory 14G \
+  --CPU 2
