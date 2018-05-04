@@ -1,0 +1,5 @@
+(paste \
+    <(cat *R1*.filt.qc.fq | paste - - - -) \
+    <(cat *R2*.filt.qc.fq | paste - - - -) \
+    | tr '\t' '\n' && cat orphans.qc.fq) | (trim-low-abund.py -V -k 20 -Z 18 -C 2 - -o - -M 4e9 --diginorm --diginorm-coverage=20) | \
+(extract-paired-reads.py --gzip -p paired.fq.gz -s single.fq.gz) > /dev/null
